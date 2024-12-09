@@ -1,7 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Chat</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include('../partials/header') %>
 
     <div class="main-content">
         <h1>Live Chat</h1>
-        <div class="chat-widget">
+        
+        
+        <div class="chat-container">
+            
+            <div class="user-list">
+                <h2>Users Online</h2>
+                <ul id="user-list">
+                    
+                </ul>
+            </div>
+
+            
+            <div class="chat-widget">
+                <h2>Chat</h2>
+                <ul id="messages">
+                    
+                </ul>
+            </div>
         </div>
+
+        
+        <form id="message-form" class="message-form">
+            <input 
+                type="text" 
+                id="message-input" 
+                name="message" 
+                placeholder="Type your message..." 
+                required 
+            />
+            <button type="submit">Send</button>
+        </form>
     </div>
+
     <script src="/frontend.js" type="application/javascript"></script>
+</body>
+</html>

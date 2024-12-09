@@ -4,12 +4,14 @@ const path = require('path');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
+const User = require('./models/User');
+const Message = require('./models/message');
 
-const PORT = 3000;
-//TODO: Replace with the URI pointing to your own MongoDB setup
-const MONGO_URI = 'mongodb://localhost:27017/keyin_test';
 const app = express();
 expressWs(app);
+
+const PORT = 3000;
+const MONGO_URI = 'mongodb://localhost:27017/ChatAppSprint';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -17,94 +19,167 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(session({
-    secret: 'chat-app-secret',
-    resave: false,
-    saveUninitialized: true
+  secret: 'chat-app-secret',
+  resave: false,
+  saveUninitialized: true
 }));
 
-let connectedClients = [];
+let connectedClients = new Map();
 
-//Note: These are (probably) not all the required routes, but are a decent starting point for the routes you'll probably need
+// Connect to MongoDB
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`)))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-app.ws('/ws', (socket, request) => {    
-    socket.on('message', (rawMessage) => {
-        const parsedMessage = JSON.parse(rawMessage);
-        
+// Middleware to check if user is logged in
+const requireLogin = (req, res, next) => {
+  if (req.session.user) return next();
+  res.redirect('/');
+};
+
+// Routes
+app.get('/', (req, res) => {
+  res.render('index/unauthenticated', { onlineUsers: connectedClients.size });
+});
+
+app.get('/signup', (req, res) => {
+  res.render('signup', { errorMessage: null });
+});
+
+app.post('/signup', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    if (await User.findOne({ username })) {
+      return res.render('signup', { errorMessage: 'Username already exists!' });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.create({ username, password: hashedPassword, role: 'user' });
+    res.redirect('/login');
+  } catch (err) {
+    console.error(err);
+    res.render('signup', { errorMessage: 'Failed to create an account. Try again.' });
+  }
+});
+
+app.get('/login', (req, res) => {
+  res.render('login', { errorMessage: null });
+});
+
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await User.findOne({ username });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.render('login', { errorMessage: 'Invalid username or password!' });
+    }
+    req.session.user = user;
+    res.redirect('/chat');
+  } catch (err) {
+    console.error(err);
+    res.render('login', { errorMessage: 'Failed to log in. Try again.' });
+  }
+});
+
+app.get('/chat', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login'); 
+    }
+    res.render('index/authenticated', { user: req.session.user });
+});
+
+
+app.get('/profile/:username', requireLogin, async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
+  if (!user) return res.status(404).send('User not found');
+  res.render('profile', { user });
+});
+
+app.post('/logout', (req, res) => {
+  connectedClients.delete(req.session.user.username);
+  req.session.destroy();
+  res.redirect('/');
+});
+
+app.ws('/ws', (ws, req) => {
+  const username = req.session?.user?.username;
+  if (!username) return ws.close();
+
+  connectedClients.set(username, ws);
+  
+
+  ws.on('message', async (message) => {
+    try {
+      const msg = JSON.parse(message);
+  
+      if (!msg.text || msg.text.trim() === '') {
+        ws.send(JSON.stringify({ error: 'Message text is required.' }));
+        return;
+      }
+
+      await Message.create({ sender: username, text: msg.text });
+
+      connectedClients.forEach((client, user) => {
+        client.send(JSON.stringify({ sender: username, text: msg.text, timestamp: new Date() }));
+      });
+    } catch (err) {
+      console.error(err);
+      ws.send(JSON.stringify({ error: 'Failed to process the message.' }));
+    }
+  });
+  
+
+  ws.on('close', () => {
+    connectedClients.delete(username);
+    connectedClients.forEach((client) =>
+      client.send(JSON.stringify({ system: true, text: `${username} has left the chat.` }))
+    );
+  });
+});
+
+const broadcastUserList = () => {
+    const onlineUsers = Array.from(connectedClients.keys());
+    connectedClients.forEach((client) => {
+      client.send(JSON.stringify({ type: 'userList', users: onlineUsers }));
     });
-
-    socket.on('close', () => {
-        
+  };
+  
+  app.ws('/ws', (ws, req) => {
+    const username = req.session?.user?.username;
+    if (!username) return ws.close();
+  
+    connectedClients.set(username, ws);
+    broadcastUserList(); 
+  
+    ws.on('message', async (message) => {
+      const msg = JSON.parse(message);
     });
-});
+  
+    ws.on('close', () => {
+      connectedClients.delete(username);
+      broadcastUserList(); 
+    });
+  });
+  
 
-app.get('/', async (request, response) => {
-    response.render('index/unauthenticated');
-});
-
-app.get('/login', async (request, response) => {
-    
-});
-
-app.get('/signup', async (request, response) => {
-    return response.render('signup', {errorMessage: null});
-});
-
-app.post('/signup', async (request, response) => {
-
-});
-
-app.get('/dashboard', async (request, response) => {
-
-    return response.render('index/authenticated');
-});
-
-app.get('/profile', async (request, response) => {
-    
-});
-
-app.post('/logout', (request, response) => {
-
-});
-
-mongoose.connect(MONGO_URI)
-    .then(() => app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`)))
-    .catch((err) => console.error('MongoDB connection error:', err));
-
-/**
- * Handles a client disconnecting from the chat server
- * 
- * This function isn't necessary and should be deleted if unused. But it's left as a hint to how you might want 
- * to handle the disconnection of clients
- * 
- * @param {string} username The username of the client who disconnected
- */
-function onClientDisconnected(username) {
-   
-}
-
-/**
- * Handles a new client connecting to the chat server
- * 
- * This function isn't necessary and should be deleted if unused. But it's left as a hint to how you might want 
- * to handle the connection of clients
- * 
- * @param {WebSocket} newSocket The socket the client has opened with the server
- * @param {string} username The username of the user who connected
- */
-function onNewClientConnected(newSocket, username) {
-    
-}
-
-/**
- * Handles a new chat message being sent from a client
- * 
- * This function isn't necessary and should be deleted if unused. But it's left as a hint to how you might want 
- * to handle new messages
- * 
- * @param {string} message The message being sent
- * @param {string} username The username of the user who sent the message
- * @param {strng} id The ID of the user who sent the message
- */
-async function onNewMessage(message, username, id) {
-    
-}
+app.get('/admin', requireLogin, async (req, res) => {
+    if (req.session.user.role !== 'admin') {
+      return res.status(403).send('Access denied.');
+    }
+    const users = await User.find();
+    const messages = await Message.find();
+    res.render('admin', { users, messages });
+  });
+  
+  app.post('/admin/delete-user/:id', requireLogin, async (req, res) => {
+    if (req.session.user.role !== 'admin') {
+      return res.status(403).send('Access denied.');
+    }
+    try {
+      await User.findByIdAndDelete(req.params.id);
+      res.redirect('/admin');
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Failed to delete user.');
+    }
+  });
+  

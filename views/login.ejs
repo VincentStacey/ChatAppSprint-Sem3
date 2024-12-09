@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/styles.css">
-  <title>Sign Up</title>
+  <title>Log In</title>
 </head>
 <body>
   <div class="main-content">
-    <h1>Sign Up</h1>
-    <form action="/signup" method="post">
+    <h1>Log In</h1>
+    <form action="/login" method="post">
       <% if (errorMessage) { %>
         <p class="error-message"><%= errorMessage %></p>
       <% } %>
@@ -17,9 +17,9 @@
       <input type="text" id="username" name="username" required>
       <label for="password">Password:</label>
       <input type="password" id="password" name="password" required>
-      <button type="submit">Sign Up</button>
+      <button type="submit">Log In</button>
     </form>
-    <p>Already have an account? <a href="/login">Log in</a></p>
+    <p>Don't have an account? <a href="/signup">Sign up</a></p>
   </div>
 </body>
 </html>
