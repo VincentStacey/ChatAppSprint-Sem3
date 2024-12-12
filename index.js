@@ -24,7 +24,18 @@ app.use(session({
   saveUninitialized: true
 }));
 
-let connectedClients = new Map();
+const backfillCreatedAt = async () => {
+  try {
+    const usersWithoutCreatedAt = await User.find({ createdAt: { $exists: false } });
+    for (const user of usersWithoutCreatedAt) {
+      user.createdAt = user._id.getTimestamp(); 
+      await user.save();
+    }
+    console.log('Backfilled missing createdAt fields for existing users.');
+  } catch (err) {
+    console.error('Error backfilling createdAt:', err);
+  }
+};
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -39,30 +50,45 @@ const requireLogin = (req, res, next) => {
 
 // Routes
 app.get('/', (req, res) => {
-  res.render('index/unauthenticated', { onlineUsers: connectedClients.size });
-});
-
-app.get('/signup', (req, res) => {
-  res.render('signup', { errorMessage: null });
-});
-
-app.post('/signup', async (req, res) => {
-  const { username, password } = req.body;
-  try {
-    if (await User.findOne({ username })) {
-      return res.render('signup', { errorMessage: 'Username already exists!' });
-    }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await User.create({ username, password: hashedPassword, role: 'user' });
-    res.redirect('/login');
-  } catch (err) {
-    console.error(err);
-    res.render('signup', { errorMessage: 'Failed to create an account. Try again.' });
+  if (req.session.user) {
+      res.render('index/authenticated', { user: req.session.user, onlineUsers: connectedClients.size });
+  } else {
+      res.render('index/unauthenticated', { user: null, onlineUsers: connectedClients.size });
   }
 });
 
+
+app.get('/signup', (req, res) => {
+  res.render('signup', { user: null, errorMessage: null });
+});
+
+app.post('/signup', async (req, res) => {
+  const { username, password, role } = req.body;
+
+  if (role && role !== 'user' && role !== 'admin') {
+    return res.status(400).send('Invalid role');
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+      role: role || 'user',
+    });
+
+    await newUser.save();
+    res.redirect('/login');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error signing up');
+  }
+});
+
+
 app.get('/login', (req, res) => {
-  res.render('login', { errorMessage: null });
+  res.render('login', { user: null, errorMessage: null }); 
 });
 
 app.post('/login', async (req, res) => {
@@ -70,15 +96,16 @@ app.post('/login', async (req, res) => {
   try {
     const user = await User.findOne({ username });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.render('login', { errorMessage: 'Invalid username or password!' });
+      return res.render('login', { user: null, errorMessage: 'Invalid username or password!' });
     }
     req.session.user = user;
     res.redirect('/chat');
   } catch (err) {
     console.error(err);
-    res.render('login', { errorMessage: 'Failed to log in. Try again.' });
+    res.render('login', { user: null, errorMessage: 'Failed to log in. Try again.' });
   }
 });
+
 
 app.get('/chat', (req, res) => {
     if (!req.session.user) {
@@ -94,81 +121,113 @@ app.get('/profile/:username', requireLogin, async (req, res) => {
   res.render('profile', { user });
 });
 
+
 app.post('/logout', (req, res) => {
   connectedClients.delete(req.session.user.username);
   req.session.destroy();
   res.redirect('/');
 });
 
+const connectedClients = new Map(); 
+
+const broadcastUserList = () => {
+  const onlineUsers = Array.from(connectedClients.keys());
+  connectedClients.forEach((client) => {
+    client.send(
+      JSON.stringify({
+        type: 'userList',
+        users: onlineUsers,
+      })
+    );
+  });
+};
+
 app.ws('/ws', (ws, req) => {
   const username = req.session?.user?.username;
   if (!username) return ws.close();
 
   connectedClients.set(username, ws);
-  
+
+  connectedClients.forEach((client) => {
+    client.send(
+      JSON.stringify({
+        system: true,
+        text: `${username} has joined the chat.`,
+      })
+    );
+  });
+
+  broadcastUserList();
 
   ws.on('message', async (message) => {
     try {
       const msg = JSON.parse(message);
-  
+
       if (!msg.text || msg.text.trim() === '') {
-        ws.send(JSON.stringify({ error: 'Message text is required.' }));
+        ws.send(
+          JSON.stringify({
+            error: 'Message text is required.',
+          })
+        );
         return;
       }
 
-      await Message.create({ sender: username, text: msg.text });
+      await Message.create({
+        sender: username,
+        text: msg.text,
+      });
 
-      connectedClients.forEach((client, user) => {
-        client.send(JSON.stringify({ sender: username, text: msg.text, timestamp: new Date() }));
+      connectedClients.forEach((client) => {
+        client.send(
+          JSON.stringify({
+            sender: username,
+            text: msg.text,
+            timestamp: new Date(),
+          })
+        );
       });
     } catch (err) {
       console.error(err);
-      ws.send(JSON.stringify({ error: 'Failed to process the message.' }));
+      ws.send(
+        JSON.stringify({
+          error: 'Failed to process the message.',
+        })
+      );
     }
   });
-  
 
   ws.on('close', () => {
     connectedClients.delete(username);
-    connectedClients.forEach((client) =>
-      client.send(JSON.stringify({ system: true, text: `${username} has left the chat.` }))
-    );
+
+    connectedClients.forEach((client) => {
+      client.send(
+        JSON.stringify({
+          system: true,
+          text: `${username} has left the chat.`,
+        })
+      );
+    });
+
+    broadcastUserList();
   });
 });
 
-const broadcastUserList = () => {
-    const onlineUsers = Array.from(connectedClients.keys());
-    connectedClients.forEach((client) => {
-      client.send(JSON.stringify({ type: 'userList', users: onlineUsers }));
-    });
-  };
-  
-  app.ws('/ws', (ws, req) => {
-    const username = req.session?.user?.username;
-    if (!username) return ws.close();
-  
-    connectedClients.set(username, ws);
-    broadcastUserList(); 
-  
-    ws.on('message', async (message) => {
-      const msg = JSON.parse(message);
-    });
-  
-    ws.on('close', () => {
-      connectedClients.delete(username);
-      broadcastUserList(); 
-    });
-  });
-  
-
-app.get('/admin', requireLogin, async (req, res) => {
-    if (req.session.user.role !== 'admin') {
-      return res.status(403).send('Access denied.');
+  app.get('/admin', requireLogin, async (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'admin') {
+        return res.status(403).send('Access denied.');
     }
-    const users = await User.find();
-    const messages = await Message.find();
-    res.render('admin', { users, messages });
-  });
+
+    try {
+        const users = await User.find();
+        const messages = await Message.find();
+
+        res.render('admin', { user: req.session.user, users, messages });
+    } catch (error) {
+        console.error('Error fetching data for admin dashboard:', error);
+        res.status(500).send('Internal server error.');
+    }
+});
+
   
   app.post('/admin/delete-user/:id', requireLogin, async (req, res) => {
     if (req.session.user.role !== 'admin') {
@@ -182,4 +241,6 @@ app.get('/admin', requireLogin, async (req, res) => {
       res.status(500).send('Failed to delete user.');
     }
   });
+
+  
   

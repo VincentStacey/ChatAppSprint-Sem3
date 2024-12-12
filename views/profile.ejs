@@ -10,13 +10,23 @@
     <%- include('partials/header') %>
 
     <main>
-        <h1>Profile of <%= user.username %></h1>
-        <p><strong>Username:</strong> <%= user.username %></p>
-        <p><strong>Role:</strong> <%= user.role %></p>
-        <p><strong>Joined:</strong> <%= new Date(user.createdAt).toLocaleString() %></p>
-        <% if (user.bio) { %>
-            <p><strong>Bio:</strong> <%= user.bio %></p>
-        <% } %>
+        <div class="profile-section">
+            <h2>Profile of <%= user.username %></h2>
+            
+            <ul class="profile-details">
+                <li>
+                    <strong>Username: <%= user.username %></strong>
+                </li>
+                <li>
+                    <strong>Role: <%= user.role %></strong>
+                </li>
+                <li>
+                    <strong>
+                    Joined: <%= user.createdAt ? new Date(user.createdAt).toLocaleString() : 'Unknown' %>
+                      </strong>
+                </li>
+            </ul>
+        </div>
     </main>
 </body>
 </html>

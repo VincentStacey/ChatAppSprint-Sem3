@@ -1,17 +1,23 @@
 <header>
-    <nav>
-        <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/chat">Chat</a></li>
-            <li><a href="/profile/<%= user.username %>">Profile</a></li>
-            <% if (user.role === 'admin') { %>
-                <li><a href="/admin">Admin Dashboard</a></li>
-            <% } %>
-            <li>
-                <form action="/logout" method="post" style="display: inline;">
-                    <button type="submit">Logout</button>
-                </form>
-            </li>
-        </ul>
-    </nav>
+  <nav>
+      <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/chat">Chat</a></li>
+          <% if (user) { %> 
+              <li><a href="/profile/<%= user.username %>">Profile</a></li>
+              <% if (user.role === 'admin') { %>
+                  <li><a href="/admin">Admin Dashboard</a></li>
+              <% } %>
+              <li>
+                  <form action="/logout" method="post" style="display: inline;">
+                      <button type="submit">Logout</button>
+                  </form>
+              </li>
+          <% } else { %>
+              <li><a href="/login">Log In</a></li>
+              <li><a href="/signup">Sign Up</a></li>
+          <% } %>
+      </ul>
+  </nav>
 </header>
+

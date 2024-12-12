@@ -11,7 +11,8 @@
 
     <main>
         <h1>Admin Dashboard</h1>
-        <section>
+    
+        <section id="admin-users">
             <h2>Users</h2>
             <ul>
                 <% users.forEach(user => { %>
@@ -21,23 +22,24 @@
                         <% if (user.role !== 'admin') { %>
                             <form action="/admin/delete-user/<%= user._id %>" method="post" style="display: inline;">
                                 <button type="submit">Delete</button>
-                            </form>
+                            </form>                            
                         <% } %>
+                <a href="/profile/<%= user.username %>" class="action-button">View Profile</a>
                     </li>
                 <% }); %>
             </ul>
         </section>
-        <section>
+    
+        <section id="admin-messages">
             <h2>Messages</h2>
             <ul>
                 <% messages.forEach(message => { %>
                     <li>
-                        <strong><%= message.sender %></strong>: <%= message.text %> 
+                        <strong><%= message.sender %></strong><%= message.text %> 
                         <span>(<%= new Date(message.timestamp).toLocaleString() %>)</span>
                     </li>
                 <% }); %>
             </ul>
         </section>
     </main>
-</body>
-</html>
+    

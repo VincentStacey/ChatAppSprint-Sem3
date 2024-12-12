@@ -1,25 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/styles.css">
-  <title>Sign Up</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <div class="main-content">
+  <%- include('partials/header') %>
+  <div class = "main-content">
     <h1>Sign Up</h1>
     <form action="/signup" method="post">
-      <% if (errorMessage) { %>
-        <p class="error-message"><%= errorMessage %></p>
-      <% } %>
-      <label for="username">Username:</label>
-      <input type="text" id="username" name="username" required>
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password" required>
-      <button type="submit">Sign Up</button>
+        
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+
+        
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+
+        
+        <label for="role">Sign Up As:</label>
+        <select id="role" name="role">
+            <option value="user" selected>User</option>
+            <option value="admin">Admin</option>
+        </select>
+
+        
+        <button type="submit">Sign Up</button>
     </form>
-    <p>Already have an account? <a href="/login">Log in</a></p>
   </div>
 </body>
 </html>

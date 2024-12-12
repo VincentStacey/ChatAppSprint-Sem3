@@ -7,12 +7,75 @@ body {
     display: flex;
     color: #F6F6F6;
     flex-direction: column;
+    padding-top: 60px;
 }
 
 body .main-content, body header {
     display: flex !important;
 }
 
+/* Header container */
+header {
+    background-color: rgba(0, 0, 0, 0.5); 
+    padding: 10px 50px; 
+    width: 100%; 
+    position: fixed; 
+    top: 0;
+    left: 0;
+    z-index: 10; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+}
+
+header nav ul {
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+header nav ul li {
+    margin: 0 20px; 
+}
+
+header nav ul li a {
+    text-decoration: none; 
+    color: #F6F6F6; 
+    font-size: 18px; 
+    font-weight: bold; 
+    padding: 10px;
+    transition: background-color 0.3s ease; 
+}
+
+header nav ul li a:hover {
+    background-color: rgba(93, 142, 251, 0.6); 
+    border-radius: 5px; 
+}
+
+header nav ul li form button {
+    background-color: rgba(93, 142, 251, 0.6); 
+    color: #F6F6F6; 
+    border: none; 
+    border-radius: 5px; 
+    padding: 10px 20px; 
+    cursor: pointer; 
+    font-size: 16px; 
+    font-weight: bold; 
+    transition: background-color 0.3s ease; 
+}
+
+header nav ul li form button:hover {
+    background-color: rgba(93, 142, 251, 0.8); 
+}
+
+header nav ul li form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Main content */
 .main-content {
     display: flex;
     justify-content: center;
@@ -91,9 +154,6 @@ body .main-content, body header {
     cursor: pointer;
 }
 
-/* Additional Styling for Authenticated Page */
-
-/* Main Content */
 .main-content {
     padding: 20px;
     display: flex;
@@ -102,13 +162,11 @@ body .main-content, body header {
     align-items: center;
 }
 
-
 .main-content h1 {
     font-size: 45px;
     color: #FFF;
     margin-bottom: 20px;
 }
-
 
 .chat-container {
     display: flex;
@@ -117,7 +175,6 @@ body .main-content, body header {
     width: 100%;
     max-width: 1200px;
 }
-
 
 .user-list {
     width: 30%;
@@ -145,7 +202,6 @@ body .main-content, body header {
     margin-bottom: 10px;
 }
 
-
 .chat-widget {
     width: 65%;
     background-color: rgba(255, 255, 255, 0.1);
@@ -168,7 +224,6 @@ body .main-content, body header {
     margin: 0;
 }
 
-
 .message {
     background-color: #d1e6ff;
     padding: 12px;
@@ -188,7 +243,6 @@ body .main-content, body header {
     background-color: #e6e6e6;
     align-self: flex-start;
 }
-
 
 .message-form {
     display: flex;
@@ -231,7 +285,6 @@ button[type="submit"]:hover {
     background-color: #4A79D9;
 }
 
-
 .notification {
     background-color: #ffdd57;
     color: #5f3c00;
@@ -252,7 +305,6 @@ button[type="submit"]:hover {
     font-size: 18px;
 }
 
-
 @media (max-width: 768px) {
     .chat-container {
         flex-direction: column;
@@ -270,4 +322,165 @@ button[type="submit"]:hover {
         font-size: 14px;
         padding: 8px;
     }
+}
+
+/* Admin Users Section */
+#admin-users {
+    margin-bottom: 30px;
+    background-color: rgba(240, 240, 255, 0.9);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#admin-users h2 {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+}
+
+#admin-users ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#admin-users ul li {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#admin-users ul li strong {
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+#admin-messages {
+    background-color: rgba(255, 245, 230, 0.9);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    
+}
+
+#admin-messages h2 {
+    font-size: 24px;
+    color: #8e44ad;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+}
+
+#admin-messages ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: #d35400;
+}
+
+#admin-messages ul li {
+    background-color: #fff4e6;
+    border: 1px solid #e6b89c;
+    border-radius: 5px;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+#admin-messages ul li strong {
+    color: #d35400;
+    font-weight: bold;
+}
+
+#admin-messages ul li span {
+    font-size: 12px;
+    color: #d35400;
+}
+
+.action-button {
+    background-color: #F6F6F6;
+    color: #5D8EFB;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 18px;
+    text-align: center;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.action-button:hover {
+    background: rgba(246, 246, 246, 0.8);
+    color: rgba(93, 142, 251, 0.8);
+    cursor: pointer;
+}
+
+/* Profile Section */
+.profile-section {
+    margin-bottom: 30px;
+    background-color: rgba(240, 240, 255, 0.9);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 30px auto;
+}
+
+.profile-section h2 {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+}
+
+.profile-details {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.profile-details li {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.profile-details li strong {
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+
+.action-button {
+    background-color: #F6F6F6;
+    color: #5D8EFB;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 18px;
+    text-align: center;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    display: inline-block;
+    margin-top: 20px;
+}
+
+.action-button:hover {
+    background: rgba(246, 246, 246, 0.8);
+    color: rgba(93, 142, 251, 0.8);
+    cursor: pointer;
 }
